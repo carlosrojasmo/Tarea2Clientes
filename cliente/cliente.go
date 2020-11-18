@@ -7,6 +7,8 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"google.golang.org/grpc"
+	pb "../proto"
 )
 
 func Chunking(name string) {
@@ -34,18 +36,40 @@ func Chunking(name string) {
 
 	fmt.Printf("Splitting to %d pieces.\n", totalPartsNum)
 
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	c := pb.NewOrdenServiceClient(conn)
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	stream, err := c.UploadBook(ctx)
 	for i := uint64(0); i < totalPartsNum; i++ {
 
 			partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
 			partBuffer := make([]byte, partSize)
+			file.Read(partBuffer)
 
-			//aqui funcion de enviar
+			c.Send(&pb.SendChunk{Chunk : partBuffer,Offset : i,Name : name})
+					//aqui funcion de enviar
 	}
+	m, err = c.CloseAndRecv()
+	fmt.Println(m)
 
 	}
 func Unchunking(name string, name2 string ,totalPartsNum uint64){
 	fileToBeChunked :=name // change here!
-	file, err := os.Open(fileToBeChunked)
+	//file, err := os.Open(fileToBeChunked)
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	c := pb.NewOrdenServiceClient(conn)
+    
 	newFileName := name2
 	_, err = os.Create(newFileName)
 
@@ -60,84 +84,94 @@ func Unchunking(name string, name2 string ,totalPartsNum uint64){
 	file, err = os.OpenFile(newFileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 
 	if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// IMPORTANT! do not defer a file.Close when opening a file for APPEND mode!
 	// defer file.Close()
 
 	// just information on which part of the new file we are appending0
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	stream,err := c.GetAddressChunks(ctx,&pb.BookName{Name : fileToBeChunked})
 
 	var writePosition int64 = 0
 
 	for j := uint64(0); j < totalPartsNum; j++ {
+		newAdress, err := stream.Recv()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-			//read a chunk
-			currentChunkFileName := "bigfile_" + strconv.FormatUint(j, 10)
+		conn2, err := grpc.Dial(newAddress.GetUbicacion(), grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer conn2.Close()
 
-			newFileChunk, err := os.Open(currentChunkFileName)
+		c2 := pb.NewOrdenServiceClient(conn2)
 
-			if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-			}
 
-			defer newFileChunk.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	    defer cancel()
 
-			chunkInfo, err := newFileChunk.Stat()
-
-			if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-			}
+		newFileChunk, err := c2.DownloadChunk(ctx , &pb.ChunkId{Id : newAddress.GetId()})
+		chunkInfo, err := newFileChunk.GetChunk().Stat()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
 			// calculate the bytes size of each chunk
 			// we are not going to rely on previous data and constant
 
-			var chunkSize int64 = chunkInfo.Size()
-			chunkBufferBytes := make([]byte, chunkSize)
+		var chunkSize int64 = chunkInfo.Size()
+		chunkBufferBytes := make([]byte, chunkSize)
 
-			fmt.Println("Appending at position : [", writePosition, "] bytes")
-			writePosition = writePosition + chunkSize
+		fmt.Println("Appending at position : [", writePosition, "] bytes")
+		writePosition = writePosition + chunkSize
 
-			// read into chunkBufferBytes
-			reader := bufio.NewReader(newFileChunk)
-			_, err = reader.Read(chunkBufferBytes)
+			// read into chunkBufferBytes me tincA que se puede saltar y agregar directo
+		reader := bufio.NewReader(newFileChunk.GetChunk())
+		_, err = reader.Read(chunkBufferBytes)
 
-			if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-			}
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
 			// DON't USE ioutil.WriteFile -- it will overwrite the previous bytes!
 			// write/save buffer to disk
 			//ioutil.WriteFile(newFileName, chunkBufferBytes, os.ModeAppend)
 
-			n, err := file.Write(chunkBufferBytes)
+		n, err := file.Write(chunkBufferBytes)
 
-			if err != nil {
-					fmt.Println(err)
-					os.Exit(1)
-			}
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
-			file.Sync() //flush to disk
+		file.Sync() //flush to disk
 
 			// free up the buffer for next cycle
 			// should not be a problem if the chunk size is small, but
 			// can be resource hogging if the chunk size is huge.
 			// also a good practice to clean up your own plate after eating
 
-			chunkBufferBytes = nil // reset or empty our buffer
+		chunkBufferBytes = nil // reset or empty our buffer
 
-			fmt.Println("Written ", n, " bytes")
+		fmt.Println("Written ", n, " bytes")
 
-			fmt.Println("Recombining part [", j, "] into : ", newFileName)
+		fmt.Println("Recombining part [", j, "] into : ", newFileName)
 	}
 
 	// now, we close the newFileName
 	file.Close()
 }
+
 
 func main(){
 	

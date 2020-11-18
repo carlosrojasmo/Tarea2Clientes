@@ -27,6 +27,7 @@ message bookName {
 
 message sendUbicacion {
   string ubicacion = 1;
+  string id = 2;
 }
 
 message chunkId {
