@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"context"
 	"io"
@@ -13,6 +12,18 @@ import (
 	//"strconv"
 	"google.golang.org/grpc"
 	pb "../proto"
+	"log"
+	"context"
+	"time"
+	"unsafe"
+	
+)
+
+const (
+	port = ":50051" //Quiza debamos usar distintos puertos segun en que trabajamos
+	address = "10.10.28.10:50051"
+	addressDataNode1  = "10.10.28.12:50051"
+	addressDataNode2  = "10.10.28.13:50051"
 )
 
 func Chunking(name string) {
@@ -56,10 +67,10 @@ func Chunking(name string) {
 			partBuffer := make([]byte, partSize)
 			file.Read(partBuffer)
 
-			c.Send(&pb.SendChunk{Chunk : partBuffer,Offset : i,Name : name})
+			stream.Send(&pb.SendChunk{Chunk : partBuffer,Offset : int64(i),Name : name})
 					//aqui funcion de enviar
 	}
-	m, err = c.CloseAndRecv()
+	m, err := stream.CloseAndRecv()
 	fmt.Println(m)
 
 	}
@@ -103,9 +114,9 @@ func Unchunking(name string, name2 string){
 
 	var writePosition int64 = 0
 
+
 	for  {
 		newAdress, err := stream.Recv()
-
 		if err == io.EOF {
         stream.SendAndClose(&pb.ReplyEmpty{Ok : "Ok"})
         break
@@ -127,7 +138,7 @@ func Unchunking(name string, name2 string){
 	    defer cancel()
 
 		newFileChunk, err := c2.DownloadChunk(ctx , &pb.ChunkId{Id : newAddress.GetId()})
-		chunkInfo, err := newFileChunk.GetChunk().Stat()
+		chunkInfo := unsafe.Sizeof(newFileChunk.GetChunk())
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -136,20 +147,14 @@ func Unchunking(name string, name2 string){
 			// calculate the bytes size of each chunk
 			// we are not going to rely on previous data and constant
 
-		var chunkSize int64 = chunkInfo.Size()
+		var chunkSize int64 = int64(chunkInfo)
 		chunkBufferBytes := make([]byte, chunkSize)
 
 		fmt.Println("Appending at position : [", writePosition, "] bytes")
 		writePosition = writePosition + chunkSize
 
 			// read into chunkBufferBytes me tincA que se puede saltar y agregar directo
-		reader := bufio.NewReader(newFileChunk.GetChunk())
-		_, err = reader.Read(chunkBufferBytes)
-
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+		
 
 			// DON't USE ioutil.WriteFile -- it will overwrite the previous bytes!
 			// write/save buffer to disk
