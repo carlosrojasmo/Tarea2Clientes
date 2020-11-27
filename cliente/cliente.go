@@ -20,14 +20,14 @@ import (
 
 const (
 	port = ":50051" //Quiza debamos usar distintos puertos segun en que trabajamos
-	NameNode = "localhost:50052"
+	NameNode = "localhost:50055"
 	addressDataNode1 = "localhost:50051"
-	addressDataNode2  = "localhost:50051"
-	addressDataNode3  = "localhost:50051"
-	addressDataNode4  = "localhost:50051"
+	addressDataNode2  = "localhost:50052"
+	addressDataNode3  = "localhost:50053"
+	addressDataNode4  = "localhost:50054"
 )
 
-var dataNodes = [4]string{"localhost:50051","localhost:50051","localhost:50051","localhost:50051"}
+var dataNodes = [4]string{addressDataNode1,addressDataNode2,addressDataNode3,addressDataNode4}
 
 func Chunking(name string) {
 
