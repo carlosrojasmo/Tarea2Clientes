@@ -12,10 +12,9 @@ import (
 	//"strconv"
 	"google.golang.org/grpc"
 	pb "../proto"
-	"log"
-	"context"
-	"time"
 	"unsafe"
+	"bufio"
+	"strings"
 	
 )
 
@@ -114,12 +113,12 @@ func Unchunking(name string, name2 string){
 
 	var writePosition int64 = 0
 
-
+    j := 0
 	for  {
-		newAdress, err := stream.Recv()
+		j++
+		newAddress, err := stream.Recv()
 		if err == io.EOF {
-        stream.SendAndClose(&pb.ReplyEmpty{Ok : "Ok"})
-        break
+			break
     	}else if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
