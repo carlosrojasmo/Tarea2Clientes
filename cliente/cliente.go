@@ -3,10 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
+	"context"
+	"io"
+	//"io/ioutil"
 	"math"
 	"os"
-	"strconv"
+	"log"
+	"time"
+	//"strconv"
 	"google.golang.org/grpc"
 	pb "../proto"
 )
@@ -42,7 +46,7 @@ func Chunking(name string) {
 	}
 	defer conn.Close()
 
-	c := pb.NewOrdenServiceClient(conn)
+	c := pb.NewLibroServiceClient(conn)
     ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	stream, err := c.UploadBook(ctx)
@@ -59,7 +63,7 @@ func Chunking(name string) {
 	fmt.Println(m)
 
 	}
-func Unchunking(name string, name2 string ,totalPartsNum uint64){
+func Unchunking(name string, name2 string){
 	fileToBeChunked :=name // change here!
 	//file, err := os.Open(fileToBeChunked)
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
@@ -68,7 +72,7 @@ func Unchunking(name string, name2 string ,totalPartsNum uint64){
 	}
 	defer conn.Close()
 
-	c := pb.NewOrdenServiceClient(conn)
+	c := pb.NewLibroServiceClient(conn)
     
 	newFileName := name2
 	_, err = os.Create(newFileName)
@@ -81,7 +85,7 @@ func Unchunking(name string, name2 string ,totalPartsNum uint64){
 	//set the newFileName file to APPEND MODE!!
 	// open files r and w
 
-	file, err = os.OpenFile(newFileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	file, err := os.OpenFile(newFileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 
 	if err != nil {
 		fmt.Println(err)
@@ -99,9 +103,13 @@ func Unchunking(name string, name2 string ,totalPartsNum uint64){
 
 	var writePosition int64 = 0
 
-	for j := uint64(0); j < totalPartsNum; j++ {
+	for  {
 		newAdress, err := stream.Recv()
-		if err != nil {
+
+		if err == io.EOF {
+        stream.SendAndClose(&pb.ReplyEmpty{Ok : "Ok"})
+        break
+    	}else if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -112,7 +120,7 @@ func Unchunking(name string, name2 string ,totalPartsNum uint64){
 		}
 		defer conn2.Close()
 
-		c2 := pb.NewOrdenServiceClient(conn2)
+		c2 := pb.NewLibroServiceClient(conn2)
 
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -174,6 +182,32 @@ func Unchunking(name string, name2 string ,totalPartsNum uint64){
 
 
 func main(){
+
+	reader := bufio.NewReader(os.Stdin)
+    fmt.Println("Cliente")
+    fmt.Println("---------------------")
+
+    
+    fmt.Print("Indique si desea hacer una descarga o una carga (D o U) : ")//se pide si es Downloader y Uploader
+    input1, _ := reader.ReadString('\n')
+    input1 = strings.Replace(input1, "\n", "", -1)
+    input1 = strings.Replace(input1, "\r", "", -1)
+    if input1 == "D" {
+    	fmt.Print("Ingrese el nombre del libro : ")//se pide el nombre del libro
+    	input2 , _ := reader.ReadString('\n')
+    	input2 = strings.Replace(input2, "\n", "", -1)
+    	input2 = strings.Replace(input2, "\r", "", -1)
+
+    	Unchunking(input2,input2 + "D")
+    	
+    } else {
+    	fmt.Print("Ingrese la direccion  del libro que desea cargar : ")//se pide el nombre del libro
+    	input2 , _ := reader.ReadString('\n')
+    	input2 = strings.Replace(input2, "\n", "", -1)
+    	input2 = strings.Replace(input2, "\r", "", -1)
+    	Chunking(input2)
+    }
+    
 	
 }
 
