@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	//"io/ioutil"
+	"math/rand"
 	"math"
 	"os"
 	"log"
@@ -19,7 +20,6 @@ import (
 )
 
 const (
-	port = ":50051" //Quiza debamos usar distintos puertos segun en que trabajamos
 	NameNode = "localhost:50055"
 	addressDataNode1 = "localhost:50051"
 	addressDataNode2  = "localhost:50052"
@@ -56,29 +56,33 @@ func Chunking(name string) {
 
 	s1 := rand.NewSource(time.Now().UnixNano())
     r1 := rand.New(s1)
-    ad = r1.Intn(len(dataNodes))
-
+    ad := r1.Intn(len(dataNodes))
+	fmt.Println("conectando...")
 	conn, err := grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
+	fmt.Println("conectado!")
 
 	c := pb.NewLibroServiceClient(conn)
-    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	stream, err := c.UploadBook(ctx)
+    //ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	//defer cancel()
+	stream, err := c.UploadBook(context.Background())
 	for i := uint64(0); i < totalPartsNum; i++ {
-
+			fmt.Println("principioo del for")
 			partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
 			partBuffer := make([]byte, partSize)
 			file.Read(partBuffer)
 
 			stream.Send(&pb.SendChunk{Chunk : partBuffer,Offset : int64(i),Name : name})
 					//aqui funcion de enviar
+			fmt.Println("estamos aqui")
 	}
 	m, err := stream.CloseAndRecv()
 	fmt.Println(m)
+	fmt.Println(err)
+	fmt.Println("fue este por la csm ahhh!")
 
 	}
 func Unchunking(name string, name2 string){
