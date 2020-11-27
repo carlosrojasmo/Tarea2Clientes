@@ -20,10 +20,14 @@ import (
 
 const (
 	port = ":50051" //Quiza debamos usar distintos puertos segun en que trabajamos
-	address = "10.10.28.10:50051"
-	addressDataNode1  = "10.10.28.12:50051"
-	addressDataNode2  = "10.10.28.13:50051"
+	NameNode = "localhost:50052"
+	addressDataNode1 = "localhost:50051"
+	addressDataNode2  = "localhost:50051"
+	addressDataNode3  = "localhost:50051"
+	addressDataNode4  = "localhost:50051"
 )
+
+var dataNodes = [4]string{"localhost:50051","localhost:50051","localhost:50051","localhost:50051"}
 
 func Chunking(name string) {
 
@@ -50,7 +54,11 @@ func Chunking(name string) {
 
 	fmt.Printf("Splitting to %d pieces.\n", totalPartsNum)
 
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	s1 := rand.NewSource(time.Now().UnixNano())
+    r1 := rand.New(s1)
+    ad = r1.Intn(len(dataNodes))
+
+	conn, err := grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -76,7 +84,8 @@ func Chunking(name string) {
 func Unchunking(name string, name2 string){
 	fileToBeChunked :=name // change here!
 	//file, err := os.Open(fileToBeChunked)
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+			
+	conn, err := grpc.Dial(NameNode, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
