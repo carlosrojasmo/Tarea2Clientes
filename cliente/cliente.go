@@ -46,7 +46,7 @@ func Chunking(name string) {
 
 	var fileSize int64 = fileInfo.Size()
 
-	const fileChunk = 1 * (1 << 20) // 1 MB, change this to your requirement
+	const fileChunk = 250 * (1 << 10) // 1 MB, change this to your requirement
 
 	// calculate total number of parts the file will be chunked into
 
