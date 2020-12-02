@@ -82,9 +82,13 @@ func Chunking(name string) {
 	m, err := stream.CloseAndRecv()
 	fmt.Println(m)
 	fmt.Println(err)
-	fmt.Println("fue este por la csm ahhh!")
 
 	}
+
+func BuscarLibro(name string) {
+	
+}
+
 func Unchunking(name string, name2 string){
 	fileToBeChunked :=name // change here!
 	//file, err := os.Open(fileToBeChunked)
@@ -108,7 +112,7 @@ func Unchunking(name string, name2 string){
 	//set the newFileName file to APPEND MODE!!
 	// open files r and w
 
-	file, err := os.OpenFile(newFileName, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	file, err := os.Create(newFileName)
 
 	if err != nil {
 		fmt.Println(err)
@@ -150,7 +154,9 @@ func Unchunking(name string, name2 string){
 	    defer cancel()
 
 		newFileChunk, err := c2.DownloadChunk(ctx , &pb.ChunkId{Id : newAddress.GetId()})
+
 		chunkInfo := unsafe.Sizeof(newFileChunk.GetChunk())
+		fmt.Println("Chunkinfo: "+fmt.Sprint(chunkInfo))
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -158,10 +164,11 @@ func Unchunking(name string, name2 string){
 
 			// calculate the bytes size of each chunk
 			// we are not going to rely on previous data and constant
-
+		
 		var chunkSize int64 = int64(chunkInfo)
-		chunkBufferBytes := make([]byte, chunkSize)
-
+		//chunkBufferBytes := make([]byte,chunkSize)
+		// read into chunkBufferBytes
+		fmt.Println("ChunkSize: "+fmt.Sprint(chunkSize))
 		fmt.Println("Appending at position : [", writePosition, "] bytes")
 		writePosition = writePosition + chunkSize
 
@@ -172,7 +179,7 @@ func Unchunking(name string, name2 string){
 			// write/save buffer to disk
 			//ioutil.WriteFile(newFileName, chunkBufferBytes, os.ModeAppend)
 
-		n, err := file.Write(chunkBufferBytes)
+		n, err := file.Write(newFileChunk.GetChunk())
 
 		if err != nil {
 			fmt.Println(err)
@@ -186,7 +193,7 @@ func Unchunking(name string, name2 string){
 			// can be resource hogging if the chunk size is huge.
 			// also a good practice to clean up your own plate after eating
 
-		chunkBufferBytes = nil // reset or empty our buffer
+		//chunkBufferBytes = nil // reset or empty our buffer
 
 		fmt.Println("Written ", n, " bytes")
 
@@ -215,7 +222,7 @@ func main(){
     	input2 = strings.Replace(input2, "\n", "", -1)
     	input2 = strings.Replace(input2, "\r", "", -1)
 
-    	Unchunking(input2,input2 + "D")
+    	Unchunking(input2,strings.Split(input2,".")[0] + "D"+"."+strings.Split(input2,".")[1])
     	
     } else {
     	fmt.Print("Ingrese la direccion  del libro que desea cargar : ")//se pide el nombre del libro
