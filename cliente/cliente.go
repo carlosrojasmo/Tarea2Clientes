@@ -16,20 +16,20 @@ import (
 	"unsafe"
 	"bufio"
 	"strings"
+	"io/ioutil"
 	
 )
 
 const (
-	NameNode = "localhost:50055"
+	nameNode = "10.10.28.10:50051"
 	addressDataNode1 = "localhost:50051"
-	addressDataNode2  = "localhost:50052"
-	addressDataNode3  = "localhost:50053"
-	addressDataNode4  = "localhost:50054"
+	addressDataNode2  = "localhost:50051"
+	addressDataNode3  = "localhost:50051"
 )
 
-var dataNodes = [4]string{addressDataNode1,addressDataNode2,addressDataNode3,addressDataNode4}
+var dataNodes = [3]string{addressDataNode1,addressDataNode2,addressDataNode3}
 
-func Chunking(name string) {
+func chunking(name string) {
 
 	fileToBeChunked :=name // change here!
 
@@ -88,15 +88,15 @@ func Chunking(name string) {
 
 	}
 
-func BuscarLibro(name string) {
+func buscarLibro(name string) {
 	
 }
 
-func Unchunking(name string, name2 string){
+func unchunking(name string, name2 string){
 	fileToBeChunked :=name // change here!
 	//file, err := os.Open(fileToBeChunked)
 			
-	conn, err := grpc.Dial(NameNode, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(nameNode, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -225,14 +225,25 @@ func main(){
     	input2 = strings.Replace(input2, "\n", "", -1)
     	input2 = strings.Replace(input2, "\r", "", -1)
 
-    	Unchunking(input2,strings.Split(input2,".")[0] + "D"+"."+strings.Split(input2,".")[1])
+    	unchunking(input2,strings.Split(input2,".")[0] + "D"+"."+strings.Split(input2,".")[1])
     	
     } else {
+		files, err := ioutil.ReadDir("./")
+    	if err != nil {
+        	log.Fatal(err)
+    	}
+
+    	for _, f := range files {
+			if f.Name() != "cliente.go"{
+				fmt.Println(f.Name())
+			}
+            
+    	}
     	fmt.Print("Ingrese la direccion  del libro que desea cargar : ")//se pide el nombre del libro
     	input2 , _ := reader.ReadString('\n')
     	input2 = strings.Replace(input2, "\n", "", -1)
     	input2 = strings.Replace(input2, "\r", "", -1)
-    	Chunking(input2)
+    	chunking(input2)
     }
     
 	
