@@ -59,8 +59,11 @@ func Chunking(name string) {
     ad := r1.Intn(len(dataNodes))
 	fmt.Println("conectando...")
 	conn, err := grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+	for err != nil {
+		fmt.Println("Fallo la conexion ,Intentando de nuevo")
+		ad = r1.Intn(len(dataNodes))
+		fmt.Println("conectando...")
+		conn, err = grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock())
 	}
 	defer conn.Close()
 	fmt.Println("conectado!")
