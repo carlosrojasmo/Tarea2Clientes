@@ -58,12 +58,12 @@ func chunking(name string) {
     r1 := rand.New(s1)
     ad := r1.Intn(len(dataNodes))
 	fmt.Println("conectando...")
-	conn, err := grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock(),grpc.WithTimeout(30 * time.Second))
 	for err != nil {
 		fmt.Println("Fallo la conexion ,Intentando de nuevo")
 		ad = r1.Intn(len(dataNodes))
 		fmt.Println("conectando...")
-		conn, err = grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock())
+		conn, err = grpc.Dial(dataNodes[ad], grpc.WithInsecure(), grpc.WithBlock(),grpc.WithTimeout(30 * time.Second))
 	}
 	defer conn.Close()
 	fmt.Println("conectado!")
@@ -96,7 +96,7 @@ func unchunking(name string, name2 string){
 	fileToBeChunked :=name // change here!
 	//file, err := os.Open(fileToBeChunked)
 			
-	conn, err := grpc.Dial(nameNode, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(nameNode, grpc.WithInsecure(), grpc.WithBlock(),grpc.WithTimeout(30 * time.Second))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
@@ -144,7 +144,7 @@ func unchunking(name string, name2 string){
 			os.Exit(1)
 		}
 
-		conn2, err := grpc.Dial(newAddress.GetUbicacion(), grpc.WithInsecure(), grpc.WithBlock())
+		conn2, err := grpc.Dial(newAddress.GetUbicacion(), grpc.WithInsecure(), grpc.WithBlock(),grpc.WithTimeout(30 * time.Second))
 		if err != nil {
 			log.Fatalf("did not connect: %v", err)
 		}
