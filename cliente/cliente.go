@@ -80,7 +80,7 @@ func chunking(name string) {
 					
 
 	}
-	m, err := stream.CloseAndRecv()
+	_, err = stream.CloseAndRecv()
 	
 
 	}
