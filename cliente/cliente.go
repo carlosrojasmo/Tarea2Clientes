@@ -69,22 +69,19 @@ func chunking(name string) {
 	fmt.Println("conectado!")
 
 	c := pb.NewLibroServiceClient(conn)
-    //ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	//defer cancel()
-	stream, err := c.UploadBook(context.Background())
+    
+	stream, err := c.UploadBook(context.Background()) //Empezamos a subir los chunks del libro
 	for i := uint64(0); i < totalPartsNum; i++ {
-			fmt.Println("principioo del for")
 			partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
 			partBuffer := make([]byte, partSize)
 			file.Read(partBuffer)
 
 			stream.Send(&pb.SendChunk{Chunk : partBuffer,Offset : int64(i),Name : name})
-					//aqui funcion de enviar
-			fmt.Println("estamos aqui")
+					
+
 	}
 	m, err := stream.CloseAndRecv()
-	fmt.Println(m)
-	fmt.Println(err)
+	
 
 	}
 
@@ -93,8 +90,7 @@ func buscarLibro(name string) {
 }
 
 func unchunking(name string, name2 string){
-	fileToBeChunked :=name // change here!
-	//file, err := os.Open(fileToBeChunked)
+	fileToBeChunked :=name 
 			
 	conn, err := grpc.Dial(nameNode, grpc.WithInsecure(), grpc.WithBlock(),grpc.WithTimeout(30 * time.Second))
 	if err != nil {
@@ -112,8 +108,7 @@ func unchunking(name string, name2 string){
 			os.Exit(1)
 	}
 
-	//set the newFileName file to APPEND MODE!!
-	// open files r and w
+
 
 	file, err := os.Create(newFileName)
 
@@ -122,19 +117,14 @@ func unchunking(name string, name2 string){
 		os.Exit(1)
 	}
 
-	// IMPORTANT! do not defer a file.Close when opening a file for APPEND mode!
-	// defer file.Close()
-
-	// just information on which part of the new file we are appending0
-	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	//defer cancel()
+	
 
 	stream,err := c.GetAddressChunks(context.Background(),&pb.BookName{Name : fileToBeChunked})
 
 	var writePosition int64 = 0
 
     j := 0
-	for  {
+	for  {//Comenzamos a descargar los chunks y a juntarlos
 		j++
 		newAddress, err := stream.Recv()
 		if err == io.EOF {
@@ -165,22 +155,14 @@ func unchunking(name string, name2 string){
 			os.Exit(1)
 		}
 
-			// calculate the bytes size of each chunk
-			// we are not going to rely on previous data and constant
+			
 		
 		var chunkSize int64 = int64(chunkInfo)
-		//chunkBufferBytes := make([]byte,chunkSize)
-		// read into chunkBufferBytes
+		
 		fmt.Println("ChunkSize: "+fmt.Sprint(chunkSize))
 		fmt.Println("Appending at position : [", writePosition, "] bytes")
 		writePosition = writePosition + chunkSize
 
-			// read into chunkBufferBytes me tincA que se puede saltar y agregar directo
-		
-
-			// DON't USE ioutil.WriteFile -- it will overwrite the previous bytes!
-			// write/save buffer to disk
-			//ioutil.WriteFile(newFileName, chunkBufferBytes, os.ModeAppend)
 
 		n, err := file.Write(newFileChunk.GetChunk())
 
@@ -189,14 +171,7 @@ func unchunking(name string, name2 string){
 			os.Exit(1)
 		}
 
-		file.Sync() //flush to disk
-
-			// free up the buffer for next cycle
-			// should not be a problem if the chunk size is small, but
-			// can be resource hogging if the chunk size is huge.
-			// also a good practice to clean up your own plate after eating
-
-		//chunkBufferBytes = nil // reset or empty our buffer
+		file.Sync() 
 
 		fmt.Println("Written ", n, " bytes")
 
