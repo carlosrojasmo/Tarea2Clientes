@@ -126,10 +126,10 @@ func unchunking(name string, name2 string){
 	// defer file.Close()
 
 	// just information on which part of the new file we are appending0
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	//defer cancel()
 
-	stream,err := c.GetAddressChunks(ctx,&pb.BookName{Name : fileToBeChunked})
+	stream,err := c.GetAddressChunks(context.Background(),&pb.BookName{Name : fileToBeChunked})
 
 	var writePosition int64 = 0
 
